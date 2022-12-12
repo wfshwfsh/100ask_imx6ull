@@ -1,0 +1,15 @@
+#修改lds, 故意讓加載地址與鏈接地址不同
+#增加global參數
+#增加打印function
+
+=> 觀察: global variable value
+ char g_Char='A'; //rw-data
+ const char g_Char2='B'; //ro-data
+
+為何g_Char可以打印成亂碼?
+ => 參數區域(rw-data)未初始化
+
+為何g_Char2可以打印成功
+ => 查看dis 發現是編譯時, 直接附值'B'
+
+ 
