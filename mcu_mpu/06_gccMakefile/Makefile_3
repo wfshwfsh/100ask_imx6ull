@@ -1,0 +1,46 @@
+# $(wildcard pattern) 
+#	pattern定义了文件名的格式, wildcard取出其中存在的文件。
+
+# $(patsubst pattern,replacement,\$(var))
+#	patsubst 函数是从 var 变量里面取出每一个值，如果这个符合 pattern 格式，把它替换成 replacement 格式，
+
+# $(foreach var,list,text) 
+#	‘var’和‘list’，将首先扩展，注意最后一个参数 ‘text’ 此时不扩展；
+#	接着，对每一个 ‘list’ 扩展产生的字，将用来为 ‘var’ 扩展后命名的变量赋值
+
+# $(filter pattern...,text)     # 在text中取出符合patten格式的值
+# $(filter-out pattern...,text) # 在text中取出不符合patten格式的值
+#
+#
+
+CC=gcc
+
+C_OBJS = $(wildcard *.c)
+OBJS = $(patsubst %.c, %.o, $(C_OBJS))
+TEST = $(foreach f, $(C_OBJS), $(f).o)
+
+FILT0 = $(C_OBJS) $(OBJS) $(TEST)
+FILT1 = $(filter %.o, $(FILT0))
+FILT2 = $(filter-out %.o, $(FILT0))
+#OBJS = a.o b.o main.o
+
+all: $(OBJS)
+	$(CC) -o main.app $^
+
+%.o: %.c
+	$(CC) -c $<
+
+clean:
+	rm -rf *.o *.app
+
+help: a.c b.c
+	@echo $(FILT0)
+	@echo $(FILT1)
+	@echo $(FILT2)
+	@echo $(TEST)
+	@echo $(C_OBJS)
+	@echo $(OBJS)
+	@echo $@
+	@echo $^
+	@echo $<
+	

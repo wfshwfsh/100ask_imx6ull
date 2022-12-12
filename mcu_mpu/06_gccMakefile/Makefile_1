@@ -1,0 +1,11 @@
+CC=gcc
+
+all: a.o b.o main.o
+	$(CC) -o main.app a.o b.o main.o 
+	
+a.o: a.c
+	$(CC) -c a.c
+b.o: b.c
+	$(CC) -c b.c
+main.o: main.c
+	$(CC) -c main.c
