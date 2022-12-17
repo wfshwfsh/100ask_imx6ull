@@ -1,0 +1,26 @@
+
+
+iomux => gpio as interrupt
+
+interrupt:
+    control reg //上升, 下降, 水平觸發
+    mask reg
+    status reg
+    GIC reg???
+    cpu interrupt enable
+
+1. get_gic_base_addr
+    __asm volatile ("mrc p15, 4, %0, c15, c0, 0" : "=r" (dst)); 
+
+init_gic:
+    get_gic_base
+    /* 讀支援中斷數 */ D_TYPER 
+    /* 禁止所有的PPI、SIG、SPI中断 */ D_ICENABLER
+    /* 这些中断, 都发给group */ D_IGROUPR
+    /* 所有的SPI中断都发给cpu interface 0 */  D_ITARGETSR
+    /* 设置GIC内部的中断触发类型 */ D_ICFGR
+    /* 把所有中断的优先级都设为最高 */ C_PMR
+    /* 没有"次级优先级" */ C_BPR
+    /* 使能:   Distributor可以给CPU interfac分发中断 */ D_CTLR
+    /* 使能:	 CPU interface可以给processor分发中断 */ C_CTLR
+    
