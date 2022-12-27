@@ -1,0 +1,1 @@
+cmd_/home/will/git/100ask_imx6ull/linuxDriver/test/test_drv.ko := arm-linux-gnueabihf-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/will/git/100ask_imx6ull/linuxDriver/test/test_drv.ko /home/will/git/100ask_imx6ull/linuxDriver/test/test_drv.o /home/will/git/100ask_imx6ull/linuxDriver/test/test_drv.mod.o ;  true

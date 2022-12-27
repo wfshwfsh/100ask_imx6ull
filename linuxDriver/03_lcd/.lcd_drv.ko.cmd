@@ -1,0 +1,1 @@
+cmd_/home/will/git/100ask_imx6ull/linuxDriver/03_lcd/lcd_drv.ko := arm-linux-gnueabihf-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/will/git/100ask_imx6ull/linuxDriver/03_lcd/lcd_drv.ko /home/will/git/100ask_imx6ull/linuxDriver/03_lcd/lcd_drv.o /home/will/git/100ask_imx6ull/linuxDriver/03_lcd/lcd_drv.mod.o ;  true
