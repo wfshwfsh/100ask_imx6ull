@@ -1,0 +1,1 @@
+cmd_/home/will/git/100ask_imx6ull/linuxDriver/05_input/03_input_dev_qemu/built-in.o :=  rm -f /home/will/git/100ask_imx6ull/linuxDriver/05_input/03_input_dev_qemu/built-in.o; arm-linux-gnueabihf-ar rcsD /home/will/git/100ask_imx6ull/linuxDriver/05_input/03_input_dev_qemu/built-in.o

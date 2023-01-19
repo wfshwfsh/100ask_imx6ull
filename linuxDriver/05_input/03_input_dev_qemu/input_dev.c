@@ -44,6 +44,7 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 	int ret, err;
 	int gpio;
 	
+	gpio = of_get_gpio(pdev->dev.of_node, 0);
 	
     //1. allocate input device
 	input_dev = input_allocate_device();
@@ -90,9 +91,10 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 	err = input_register_device(input_dev);
 
     //4. get irq-gpio from dts, gpio to irq
-    irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	g_irq = irq->start;
+    //irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	//g_irq = irq->start;
 
+	g_irq = gpio_to_irq(gpio);
     ret = request_irq(g_irq, input_dev_demo_isr, IRQF_TRIGGER_RISING, "input_dev_demo_isr", NULL);
     
     return 0;
