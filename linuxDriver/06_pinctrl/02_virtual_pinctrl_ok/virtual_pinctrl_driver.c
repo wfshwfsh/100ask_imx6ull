@@ -1,3 +1,4 @@
+#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/init.h>
 #include <linux/io.h>
@@ -12,10 +13,9 @@
 #include <linux/slab.h>
 #include <linux/regmap.h>
 
-#include "../core.h"
-#include "pinctrl-imx.h"
+#include "core.h"
+//#include "pinctrl-imx.h"
 
-static struct imx_pinctrl_soc_info *virtual_pinctrl_info;
 static struct pinctrl_desc *pinctrl;
 static struct pinctrl_dev *g_pinctrl_dev;
 
@@ -35,34 +35,40 @@ struct virtual_functions_desc {
 	int num_groups;
 };
 
+const char *fun1_grps[] = {"pin0", "pin1", "pin2", "pin3"};
+const char *fun2_grps[] = {"pin0", "pin1"};
+const char *fun3_grps[] = {"pin2", "pin3"};
+
+
+
 static struct virtual_functions_desc g_func_des[]={
 
-	{"gpio", {"pin0", "pin1", "pin2", "pin3"}, 4},
-	{"i2c",  {"pin0", "pin1"}, 2},
-	{"uart", {"pin2", "pin3"}, 2},
+	{"gpio", fun1_grps, 4},
+	{"i2c",  fun2_grps, 2},
+	{"uart", fun3_grps, 2},
 };
 
 
 
 static int virtual_get_groups_count(struct pinctrl_dev *pctldev)
 {
-	return pctldev->desc.npins;
+	return pctldev->desc->npins;
 }
 
 static const char *virtual_get_group_name(struct pinctrl_dev *pctldev,
 				       unsigned selector)
 {
-	return pctldev->desc.pins[selector].name;
+	return pctldev->desc->pins[selector].name;
 }
 
 static int virtual_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
 				  const unsigned **pins,
 				  unsigned *npins)
 {
-	if (selector >= pctldev->desc.npins)
+	if (selector >= pctldev->desc->npins)
 	   return -EINVAL;
 
-	*pins = pctldev->desc.pins[selector].number;
+	*pins = &pctldev->desc->pins[selector].number;
 	*npins = 1;
 
 	return 0;
@@ -74,10 +80,68 @@ static void  virtual_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *
 	seq_printf(s, "%s", dev_name(pctldev->dev));
 }
 
+
+/*
+	i2cgrp {
+		  functions = "i2c", "i2c";
+		  groups = "pin0", "pin1";
+		  configs = <0x11223344  0x55667788>;
+	};
+
+	one pin ==> two pinctrl_map (one for mux, one for config)
+
+*/
+
+
 static int virtual_dt_node_to_map(struct pinctrl_dev *pctldev,
 		 struct device_node *np,
 		 struct pinctrl_map **map, unsigned *num_maps)
 {
+	int i;
+	int num_pins = 0;
+	struct pinctrl_map *new_map;
+	const char *function;
+	const char *pin;
+	unsigned int config;
+	unsigned long *configs;
+	
+	/* 1. confirm pin num, alloc pinctrl_map */
+	while(1)
+	{
+		if(0 == of_property_read_string_index(np, "groups", num_pins, &pin))
+			num_pins++;
+		else
+			break;
+	}
+	
+	new_map = kmalloc(sizeof(struct pinctrl_map) * num_pins * 2, GFP_KERNEL);
+	if (!new_map)
+		return -ENOMEM;
+	
+	*map = new_map;
+	*num_maps = num_pins * 2;
+	
+	for (i = 0; i < num_pins; i++) 
+	{
+		/* 2. get pinctrl info from dt */
+		of_property_read_string_index(np, "functions", i, &function);
+		of_property_read_string_index(np, "groups", i, &pin);
+		of_property_read_u32_index(np, "configs", i, &config);
+		
+		/* 3. 存入pinctrl_map   */
+		configs = kmalloc(sizeof(*configs), GFP_KERNEL);
+		new_map[i*2].type = PIN_MAP_TYPE_MUX_GROUP;
+		new_map[i*2].data.mux.function = function;
+		new_map[i*2].data.mux.group = pin;
+		
+		new_map[i*2+1].type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 		new_map[i*2+1].data.configs.group_or_pin = pin;
+		new_map[i*2+1].data.configs.configs = configs;
+		configs[0] = config;
+		
+		new_map[i*2+1].data.configs.num_configs = 1;
+		
+	}
 	
 	return 0;
 }
@@ -85,7 +149,14 @@ static int virtual_dt_node_to_map(struct pinctrl_dev *pctldev,
 static void virtual_dt_free_map(struct pinctrl_dev *pctldev,
 			 struct pinctrl_map *map, unsigned num_maps)
 {
-	kfree(map);
+	while(num_maps--)
+	{
+		if (map->type == PIN_MAP_TYPE_CONFIGS_PIN)
+			kfree(map->data.configs.configs);
+
+		kfree(map);
+		map++;
+	}
 }
 
 
@@ -115,7 +186,7 @@ static const struct pinctrl_ops virtual_pctrl_ops = {
 
 static int virtual_pmx_get_funcs_count(struct pinctrl_dev *pctldev)
 {
-	return ARRAYSIZE(g_func_des);
+	return ARRAY_SIZE(g_func_des);
 }
 
 static const char *virtual_pmx_get_func_name(struct pinctrl_dev *pctldev,
@@ -142,7 +213,7 @@ static int virtual_pmx_set(struct pinctrl_dev *pctldev, unsigned selector,
 	* Configure the mux mode for each pin in the group for a specific
 	* function.
 	*/
-	printk("set %s as %s\n", pctldev->desc->pins[group].name, g_funcs_des[selector].func_name);
+	printk("set %s as %s\n", pctldev->desc->pins[group].name, g_func_des[selector].func_name);
 
 	return 0;
 }
@@ -173,20 +244,21 @@ static int virtual_pinconf_set(struct pinctrl_dev *pctldev,
 	if(	num_configs != 1)
 		return -EINVAL;
 
-	g_configs[pin_id] = *config;
+	g_configs[pin_id] = *configs;
 	printk("config %s as 0x%lx\n", pctldev->desc->pins[pin_id].name, *configs);
+	return 0;
 }
 
 static void virtual_pinconf_dbg_show(struct pinctrl_dev *pctldev,
 			struct seq_file *s, unsigned pin_id)
 {
-	seq_printf("0x%lx", g_configs[pin_id].config);
+	seq_printf(s, "0x%lx", g_configs[pin_id]);
 }
 
 static void imx_pinconf_group_dbg_show(struct pinctrl_dev *pctldev,
 					 struct seq_file *s, unsigned group)
 {
-	seq_printf("0x%lx", g_configs[pin_id].config);
+	seq_printf(s, "0x%lx", g_configs[group]);
 }
 
 
@@ -209,7 +281,7 @@ static int virtual_pinctrl_probe(struct platform_device *pdev)
 
 	/* 2.1 set pins and groups */
 	pinctrl->pins = pins;
-	pinctrl->npins = ARRAYSIZE(pins);
+	pinctrl->npins = ARRAY_SIZE(pins);
 	pinctrl->pctlops = &virtual_pctrl_ops;
 	
 	/* 2.2 pin_mux */
@@ -219,7 +291,7 @@ static int virtual_pinctrl_probe(struct platform_device *pdev)
 	pinctrl->confops = &imx_pinconf_ops;
 	
 	/* 3. 註冊pinctrl_desc */
-	g_pinctrl_dev = devm_pinctrl_register(pdev->dev, pinctrl, NULL);
+	g_pinctrl_dev = devm_pinctrl_register(&pdev->dev, pinctrl, NULL);
 
 
 	return 0;
@@ -250,8 +322,10 @@ static struct platform_driver virtual_pinctrl_driver = {
 
 static int __init virtual_pinctrl_init(void)
 {
+	int ret;
+
 	printk("virtual_pinctrl_init \n");
-    int ret;
+    
 	ret = platform_driver_register(&virtual_pinctrl_driver);
 	if (ret)
 		return ret;
