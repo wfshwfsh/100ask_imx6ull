@@ -1,0 +1,1 @@
+cmd_/home/will/git/100ask_imx6ull/linuxDriver/07_gpio/3_virtual_gpio_ok/built-in.o :=  rm -f /home/will/git/100ask_imx6ull/linuxDriver/07_gpio/3_virtual_gpio_ok/built-in.o; arm-linux-gnueabihf-ar rcsD /home/will/git/100ask_imx6ull/linuxDriver/07_gpio/3_virtual_gpio_ok/built-in.o

@@ -1,0 +1,1 @@
+cmd_/home/will/git/100ask_imx6ull/linuxDriver/07_gpio/1_led/led_drv.ko := arm-linux-gnueabihf-ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/will/git/100ask_imx6ull/linuxDriver/07_gpio/1_led/led_drv.ko /home/will/git/100ask_imx6ull/linuxDriver/07_gpio/1_led/led_drv.o /home/will/git/100ask_imx6ull/linuxDriver/07_gpio/1_led/led_drv.mod.o ;  true
