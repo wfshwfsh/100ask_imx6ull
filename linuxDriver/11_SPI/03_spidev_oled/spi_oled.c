@@ -66,12 +66,6 @@ void spi_write_datas(unsigned char *buf, int len)
     write(fd_spidev, buf, len);
 }
 
-void oled_write_datas(const unsigned char *buf, int len)
-{
-    oled_set_dc_pin(1);
-    write(fd_spidev, buf, len);
-}
-
 
 /**********************************************************************
 	 * 函数名称： oled_write_cmd
@@ -191,16 +185,11 @@ int oled_fill_data(unsigned char fill_Data)
 void OLED_DIsp_Clear(void)  
 {
     unsigned char x, y;
-    unsigned char zbuf[128];
-    memset(zbuf, 0, sizeof(zbuf));
-    
     for (y = 0; y < 8; y++)
     {
         OLED_DIsp_Set_Pos(0, y);
-        //for (x = 0; x < 128; x++)
-        //    oled_write_cmd_data(0, OLED_DATA); /* 清零 */
-        
-        oled_write_datas(zbuf, 128);/* 清零 */
+        for (x = 0; x < 128; x++)
+            oled_write_cmd_data(0, OLED_DATA); /* 清零 */
     }
 }
 
@@ -217,16 +206,11 @@ void OLED_DIsp_Clear(void)
 void OLED_DIsp_All(void)  
 {
 	unsigned char x, y;
-    unsigned char buf[128];
-    
-    memset(buf, 0xff, sizeof(buf));
 	for (y = 0; y < 8; y++)
 	{
 		OLED_DIsp_Set_Pos(0, y);
-		//for (x = 0; x < 128; x++)
-		//	oled_write_cmd_data(0xff, OLED_DATA); /* 全点亮 */
-        
-        oled_write_datas(buf, 128); /* 全点亮 */
+		for (x = 0; x < 128; x++)
+			oled_write_cmd_data(0xff, OLED_DATA); /* 全点亮 */
 	}
 }
 
@@ -243,8 +227,7 @@ void OLED_DIsp_All(void)
 	 * 2020/03/15		 V1.0	  芯晓		  创建
  ***********************************************************************/
 void OLED_DIsp_Set_Pos(int x, int y)
-{
- 	oled_write_cmd_data(0xb0+y,OLED_CMD);
+{ 	oled_write_cmd_data(0xb0+y,OLED_CMD);
 	oled_write_cmd_data((x&0x0f),OLED_CMD); 
 	oled_write_cmd_data(((x&0xf0)>>4)|0x10,OLED_CMD);
 }   	      	   			 
@@ -269,15 +252,13 @@ void OLED_DIsp_Char(int x, int y, unsigned char c)
 	/* 发给OLED */
 	OLED_DIsp_Set_Pos(x, y);
 	/* 发出8字节数据 */
-	oled_write_datas(&dots[0], 8);
-    //for (i = 0; i < 8; i++)
-	//	oled_write_cmd_data(dots[i], OLED_DATA);
-    
+	for (i = 0; i < 8; i++)
+		oled_write_cmd_data(dots[i], OLED_DATA);
+
 	OLED_DIsp_Set_Pos(x, y+1);
 	/* 发出8字节数据 */
-    oled_write_datas(&dots[8], 8);
-	//for (i = 0; i < 8; i++)
-	//	oled_write_cmd_data(dots[i+8], OLED_DATA);
+	for (i = 0; i < 8; i++)
+		oled_write_cmd_data(dots[i+8], OLED_DATA);
 }
 
 
@@ -373,7 +354,7 @@ int main(int argc, char *argv[])
 		printf("Usage: %s <dev/spidevB.D> <DC_pin_number>\n", argv[0]);
 		return -1;
 	}
-    
+
     //open dev
 	fd_spidev = open(argv[1], O_RDWR);
 	if (fd_spidev < 0) {
